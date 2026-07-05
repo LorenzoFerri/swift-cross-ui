@@ -1889,6 +1889,10 @@ final class NSCustomApplicationDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         onOpenURLs?(urls)
     }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
+    }
 }
 
 /// A scroll view with scrolling gestures disabled. Used as a dummy scroll view to
