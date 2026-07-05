@@ -60,16 +60,20 @@ extension GtkBackend: BackendFeatures.TrayIcons {
 
         let iconName: String?
         let iconPath: String?
+        let iconFile: String?
         switch icon {
             case nil:
                 iconName = nil
                 iconPath = nil
+                iconFile = nil
             case .named(let name):
                 iconName = name
                 iconPath = nil
+                iconFile = nil
             case .file(let url):
-                iconName = url.deletingPathExtension().lastPathComponent
-                iconPath = url.deletingLastPathComponent().path
+                iconName = nil
+                iconPath = nil
+                iconFile = url.path
         }
 
         scui_status_notifier_item_update(
@@ -77,6 +81,7 @@ extension GtkBackend: BackendFeatures.TrayIcons {
             title,
             iconName,
             iconPath,
+            iconFile,
             tooltip
         )
 

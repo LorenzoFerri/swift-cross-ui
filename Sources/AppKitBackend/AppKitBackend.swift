@@ -214,6 +214,7 @@ public final class AppKitBackend: FullAppBackend {
     }
 
     public func activate(window: Window) {
+        NSApplication.shared.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
 

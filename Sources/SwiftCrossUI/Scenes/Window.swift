@@ -101,6 +101,7 @@ public final class WindowNode<Content: View>: SceneGraphNode {
                     backend: backend,
                     environment: environment
                 )
+                reference.activate(backend: backend)
             }
         }
 

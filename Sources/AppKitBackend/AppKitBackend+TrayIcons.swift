@@ -32,9 +32,12 @@ extension AppKitBackend: BackendFeatures.TrayIcons {
 
         if let button = statusItem.button {
             if let image = renderStatusItemIcon(icon) {
+                statusItem.length = NSStatusItem.squareLength
+                button.imageScaling = .scaleProportionallyDown
                 button.image = image
                 button.title = ""
             } else {
+                statusItem.length = NSStatusItem.variableLength
                 button.image = nil
                 button.title = title
             }
@@ -78,9 +81,18 @@ extension AppKitBackend: BackendFeatures.TrayIcons {
             case nil:
                 return nil
             case .named(let name):
-                return NSImage(named: NSImage.Name(name))
+                return prepareStatusItemImage(NSImage(named: NSImage.Name(name)))
             case .file(let url):
-                return NSImage(contentsOf: url)
+                return prepareStatusItemImage(NSImage(contentsOf: url))
         }
+    }
+
+    private func prepareStatusItemImage(_ image: NSImage?) -> NSImage? {
+        guard let image else {
+            return nil
+        }
+
+        image.size = NSSize(width: 26, height: 26)
+        return image
     }
 }

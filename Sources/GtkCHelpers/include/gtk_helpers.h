@@ -36,6 +36,7 @@ void scui_status_notifier_item_update(
     const char *title,
     const char *icon_name,
     const char *icon_path,
+    const char *icon_file,
     const char *tooltip
 );
 

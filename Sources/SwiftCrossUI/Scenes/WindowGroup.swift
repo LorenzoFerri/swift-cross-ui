@@ -111,6 +111,7 @@ public final class WindowGroupNode<Content: View>: SceneGraphNode {
                     backend: backend,
                     environment: environment
                 )
+                reference.activate(backend: backend)
             }
         }
 

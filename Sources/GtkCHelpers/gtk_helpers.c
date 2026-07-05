@@ -26,6 +26,7 @@ struct SCUIStatusNotifierItem {
     char *title;
     char *icon_name;
     char *icon_path;
+    char *icon_file;
     char *tooltip;
     char *bus_name;
 
@@ -158,7 +159,80 @@ static GVariant *scui_empty_icon_pixmap(void) {
     return g_variant_builder_end(&builder);
 }
 
+static gboolean scui_add_icon_pixmap_for_size(
+    GVariantBuilder *pixmaps,
+    const char *path,
+    int size
+) {
+    GError *error = NULL;
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale(
+        path,
+        size,
+        size,
+        TRUE,
+        &error
+    );
+    if (!pixbuf) {
+        if (error) {
+            g_error_free(error);
+        }
+        return FALSE;
+    }
+
+    int width = gdk_pixbuf_get_width(pixbuf);
+    int height = gdk_pixbuf_get_height(pixbuf);
+    int rowstride = gdk_pixbuf_get_rowstride(pixbuf);
+    int channels = gdk_pixbuf_get_n_channels(pixbuf);
+    gboolean has_alpha = gdk_pixbuf_get_has_alpha(pixbuf);
+    guchar *pixels = gdk_pixbuf_get_pixels(pixbuf);
+
+    GVariantBuilder bytes;
+    g_variant_builder_init(&bytes, G_VARIANT_TYPE("ay"));
+
+    for (int y = 0; y < height; y++) {
+        guchar *row = pixels + y * rowstride;
+        for (int x = 0; x < width; x++) {
+            guchar *pixel = row + x * channels;
+            guint8 red = pixel[0];
+            guint8 green = pixel[1];
+            guint8 blue = pixel[2];
+            guint8 alpha = has_alpha ? pixel[3] : 0xff;
+
+            g_variant_builder_add(&bytes, "y", alpha);
+            g_variant_builder_add(&bytes, "y", red);
+            g_variant_builder_add(&bytes, "y", green);
+            g_variant_builder_add(&bytes, "y", blue);
+        }
+    }
+
+    g_variant_builder_add(
+        pixmaps,
+        "(ii@ay)",
+        width,
+        height,
+        g_variant_builder_end(&bytes)
+    );
+    g_object_unref(pixbuf);
+    return TRUE;
+}
+
+static GVariant *scui_icon_pixmap_from_file(const char *path) {
+    static const int sizes[] = { 16, 22, 24, 32, 44, 48, 64 };
+
+    GVariantBuilder pixmaps;
+    g_variant_builder_init(&pixmaps, G_VARIANT_TYPE("a(iiay)"));
+
+    for (gsize i = 0; i < G_N_ELEMENTS(sizes); i++) {
+        scui_add_icon_pixmap_for_size(&pixmaps, path, sizes[i]);
+    }
+
+    return g_variant_builder_end(&pixmaps);
+}
+
 static GVariant *scui_icon_pixmap(SCUIStatusNotifierItem *item) {
+    if (item->icon_file && item->icon_file[0] != '\0') {
+        return scui_icon_pixmap_from_file(item->icon_file);
+    }
     return scui_empty_icon_pixmap();
 }
 
@@ -577,6 +651,7 @@ SCUIStatusNotifierItem *scui_status_notifier_item_new(
     item->title = scui_strdup_or_empty(title);
     item->icon_name = scui_strdup_or_empty(NULL);
     item->icon_path = scui_strdup_or_empty(NULL);
+    item->icon_file = scui_strdup_or_empty(NULL);
     item->tooltip = scui_strdup_or_empty(NULL);
     item->activate_callback = activate_callback;
     item->user_data = user_data;
@@ -670,6 +745,7 @@ void scui_status_notifier_item_update(
     const char *title,
     const char *icon_name,
     const char *icon_path,
+    const char *icon_file,
     const char *tooltip
 ) {
     if (!item) {
@@ -679,12 +755,14 @@ void scui_status_notifier_item_update(
     gboolean title_changed = g_strcmp0(item->title, title ? title : "") != 0;
     gboolean icon_changed =
         g_strcmp0(item->icon_name, icon_name ? icon_name : "") != 0
-        || g_strcmp0(item->icon_path, icon_path ? icon_path : "") != 0;
+        || g_strcmp0(item->icon_path, icon_path ? icon_path : "") != 0
+        || g_strcmp0(item->icon_file, icon_file ? icon_file : "") != 0;
     gboolean tooltip_changed = g_strcmp0(item->tooltip, tooltip ? tooltip : "") != 0;
 
     scui_replace_string(&item->title, title);
     scui_replace_string(&item->icon_name, icon_name);
     scui_replace_string(&item->icon_path, icon_path);
+    scui_replace_string(&item->icon_file, icon_file);
     scui_replace_string(&item->tooltip, tooltip);
 
     if (title_changed) {
@@ -768,6 +846,7 @@ void scui_status_notifier_item_free(SCUIStatusNotifierItem *item) {
     g_free(item->title);
     g_free(item->icon_name);
     g_free(item->icon_path);
+    g_free(item->icon_file);
     g_free(item->tooltip);
     g_free(item->bus_name);
     g_free(item);
