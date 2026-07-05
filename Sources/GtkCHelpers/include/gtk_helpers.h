@@ -9,6 +9,46 @@ extern "C" {
 
 GtkWidget *wrapped_gtk_message_dialog_new(void);
 
+typedef struct SCUIStatusNotifierItem SCUIStatusNotifierItem;
+typedef void (*SCUIStatusNotifierActivateCallback)(void *user_data);
+typedef void (*SCUIStatusNotifierMenuItemCallback)(int item_id, void *user_data);
+
+typedef struct {
+    int id;
+    int parent_id;
+    const char *label;
+    int enabled;
+    int visible;
+    int is_separator;
+    int is_toggle;
+    int toggle_state;
+} SCUIStatusNotifierMenuItem;
+
+SCUIStatusNotifierItem *scui_status_notifier_item_new(
+    const char *id,
+    const char *title,
+    SCUIStatusNotifierActivateCallback activate_callback,
+    void *user_data
+);
+
+void scui_status_notifier_item_update(
+    SCUIStatusNotifierItem *item,
+    const char *title,
+    const char *icon_name,
+    const char *icon_path,
+    const char *tooltip
+);
+
+void scui_status_notifier_item_set_menu(
+    SCUIStatusNotifierItem *item,
+    const SCUIStatusNotifierMenuItem *menu_items,
+    int menu_item_count,
+    SCUIStatusNotifierMenuItemCallback menu_item_callback,
+    void *user_data
+);
+
+void scui_status_notifier_item_free(SCUIStatusNotifierItem *item);
+
 // Swift suddenly stopped finding these corresponding `G_*` enum members on its
 // own on macOS. Weirdly everything worked in one command run, and then it started
 // failing in the next (with identical code). Then when I tried recreating the
